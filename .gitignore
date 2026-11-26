@@ -1,5 +1,26 @@
+# Dependências e builds
 node_modules/
+.next/
 .netlify/
+
+# Variáveis de ambiente e segredos
 .env
+.env.local
+.env*.local
 .env.*
+!.env.example
+
+# Chaves privadas e certificados
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# Arquivos temporários, logs e sistema
+*.log
+npm-debug.log*
+tmp/
+temp/
 .DS_Store
+Thumbs.db

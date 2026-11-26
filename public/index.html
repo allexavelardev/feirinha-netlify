@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Feirinha - Pedidos</title>
+<style>
+:root{color-scheme:light dark;--bg:#f5f1ea;--card:#fff;--surface:#fff;--ink:#2b2622;--header:#2b2622;--muted:#8a7f74;--accent:#c2410c;--line:#e6dfd4;--ok:#15803d;--info:#2563eb}
+@media (prefers-color-scheme: dark){
+:root{--bg:#161412;--card:#221e1b;--surface:#221e1b;--ink:#f3ede4;--header:#0c0b0a;--muted:#a39888;--accent:#f0723a;--line:#3a332c;--ok:#22c55e;--info:#60a5fa}
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);padding:0 0 env(safe-area-inset-bottom,0px)}
+header{position:sticky;top:0;background:var(--header);color:#fff;padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top,0px));z-index:5}
+header h1{margin:0;font-size:18px}
+nav{display:flex;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:52px;z-index:4}
+nav button{flex:1;padding:12px 4px;border:0;background:none;font-size:14px;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer}
+nav button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+main{padding:14px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center}
+.between{justify-content:space-between}
+label{display:block;font-size:13px;color:var(--muted);margin:8px 0 4px}
+input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:var(--surface);color:var(--ink);margin-bottom:6px;font-family:inherit}
+button.btn{padding:12px 14px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+button.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+button.danger{background:var(--surface);color:#b91c1c;border:1px solid #fecaca}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px}
+.chip{flex:none;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--muted);cursor:pointer}
+.chip.on{background:var(--header);color:#fff;border-color:var(--header)}
+.num{font-size:20px;font-weight:700}
+.badge{font-size:12px;padding:4px 8px;border-radius:999px;color:#fff}
+.s-Novo{background:var(--info)}.s-Pronto{background:var(--ok)}
+.pronto{background:var(--ok);color:#fff;font-weight:700;padding:10px 14px;border-radius:10px;font-size:15px;letter-spacing:.5px}
+.muted{color:var(--muted);font-size:13px}
+.items{margin:8px 0;font-size:14px;line-height:1.6}
+.total{font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:30px 0}
+.li{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px}
+.li:last-child{border-bottom:0}
+.qtd{width:72px;flex:none;margin:0}
+#msg{min-height:20px;font-size:14px;margin-top:8px;color:var(--ok)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.modal[hidden]{display:none}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+@media(min-width:700px){.modal{align-items:center}.sheet{border-radius:16px}}
+.sec{margin:14px 0 8px;font-size:15px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.kpi b{font-size:18px}
+.bars{display:flex;align-items:flex-end;gap:3px;height:110px}
+.bar{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.bar i{display:block;width:100%;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px}
+.bar span{font-size:9px;color:var(--muted);margin-top:3px}
+</style>
+</head>
+<body>
+<header><h1>🍽️ Feirinha — Pedidos</h1></header>
+<nav>
+  <button data-tab="painel" class="on">Painel</button>
+  <button data-tab="resumo">Resumo</button>
+  <button data-tab="cardapio">Cardápio</button>
+</nav>
+<main>
+  <section id="painel"></section>
+  <section id="resumo" hidden></section>
+
+  <section id="cardapio" hidden>
+    <div class="card">
+      <label>Novo produto</label>
+      <input id="pNome" placeholder="Nome do produto" autocomplete="off">
+      <input id="pPreco" placeholder="Preço (ex.: 12,50)" inputmode="decimal">
+      <button class="btn" id="addProd" style="width:100%;margin-top:4px">Adicionar ao cardápio</button>
+    </div>
+    <div class="card" id="listaCardapio"></div>
+  </section>
+</main>
+
+<div id="novo" class="modal" hidden>
+  <div class="sheet">
+    <div class="row between" style="margin-bottom:10px"><span class="num">Novo pedido</span><button class="btn ghost" data-act="fechar">✕</button></div>
+    <div class="card">
+      <label>Nome do cliente</label>
+      <input id="cliente" placeholder="Ex.: Ana - apto 302" autocomplete="off">
+      <label>Produto do cardápio</label>
+      <select id="produto"></select>
+      <div class="row">
+        <input id="qtd" class="qtd" type="number" min="1" value="1" inputmode="numeric">
+        <button class="btn ghost" id="addItem" style="flex:1">+ Adicionar item</button>
+      </div>
+    </div>
+    <div class="card">
+      <div id="carrinho"></div>
+      <label>Forma de pagamento</label>
+      <select id="pagamento"><option>Pix</option><option>Dinheiro</option><option>Cartão débito</option><option>Cartão crédito</option></select>
+      <label>Observação (opcional)</label>
+      <textarea id="obs" rows="2" placeholder="Ex.: sem cebola"></textarea>
+      <button class="btn" id="lancar" style="width:100%;margin-top:8px">Lançar pedido</button>
+      <div id="msg"></div>
+    </div>
+  </div>
+</div>
+
+<div id="editarProd" class="modal" hidden>
+  <div class="sheet">
+    <div class="card">
+      <div class="row between" style="margin-bottom:6px"><span class="num">Editar produto</span><button class="btn ghost" data-act="fecharEditarProd">✕</button></div>
+      <label>Nome</label>
+      <input id="eNome" autocomplete="off">
+      <label>Preço</label>
+      <input id="ePreco" inputmode="decimal">
+      <input type="hidden" id="eId">
+      <button class="btn" data-act="salvarEditarProd" style="width:100%;margin-top:6px">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmar" class="modal" hidden>
+  <div class="sheet">
+    <div class="card" style="text-align:center">
+      <div class="num" style="margin-bottom:6px">Tem certeza?</div>
+      <p class="muted" id="confirmarTexto"></p>
+      <div class="row" style="margin-top:12px">
+        <button class="btn ghost" style="flex:1" data-act="cancelarExcluir">Cancelar</button>
+        <button class="btn" style="flex:1;background:#b91c1c" data-act="confirmarExcluir">Excluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = v => Number(v || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const hora = iso => iso ? new Date(iso).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
+const STATUS = ['Novo', 'Pronto'];
+
+let dados = {pedidos: [], cardapio: []};
+let carrinho = [];
+let filtro = 'Todos';
+let alvoExcluir = null;
+let senha = localStorage.getItem('feirinha-senha') || '';
+let pedindoSenha = false;
+let autenticacaoCancelada = false;
+let gravacoesEmAndamento = 0;
+
+/* ---------- Comunicação com a API ---------- */
+function mostrarErroApi(texto, comBotaoSenha = false) {
+  let banner = $('#erroApi');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'erroApi';
+    banner.className = 'card';
+    banner.style.cssText = 'border-color:#fecaca;color:#b91c1c;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap';
+    $('main').prepend(banner);
+  }
+  banner.hidden = !texto;
+  banner.style.display = texto ? 'flex' : 'none';
+  if (texto) {
+    banner.innerHTML = `<span>${esc(texto)}</span>` +
+      (comBotaoSenha ? '<button class="btn ghost" type="button" data-act="entrarSenha">Informar senha</button>' : '');
+  }
+}
+
+async function pedirSenha() {
+  if (pedindoSenha) return;
+  pedindoSenha = true;
+  const informada = prompt('Senha do painel:');
+  pedindoSenha = false;
+  if (informada === null) {
+    autenticacaoCancelada = true;
+    mostrarErroApi('Autenticação necessária para carregar os pedidos.', true);
+    return;
+  }
+  autenticacaoCancelada = false;
+  senha = informada;
+  localStorage.setItem('feirinha-senha', senha);
+  return carregar();
+}
+
+async function carregar() {
+  if (gravacoesEmAndamento > 0) return;
+  try {
+    const r = await fetch('/api', {headers: {'x-senha': senha}});
+    if (r.status === 401) return pedirSenha();
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      mostrarErroApi(err.erro || `Erro ao carregar dados (${r.status}).`);
+      return;
+    }
+    mostrarErroApi('');
+    dados = await r.json();
+    render();
+  } catch {
+    mostrarErroApi('Sem conexão com o servidor. Tentando novamente…');
+  }
+}
+
+async function api(acao, extra = {}) {
+  gravacoesEmAndamento++;
+  try {
+    const r = await fetch('/api', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'x-senha': senha},
+      body: JSON.stringify({acao, ...extra})
+    });
+    if (r.status === 401) { await pedirSenha(); throw new Error('senha'); }
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.erro || 'falha');
+    }
+    mostrarErroApi('');
+    dados = await r.json();
+    render();
+  } finally {
+    gravacoesEmAndamento--;
+  }
+}
+
+/* ---------- Abas ---------- */
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  ['painel', 'resumo', 'cardapio'].forEach(id => $('#' + id).hidden = id !== b.dataset.tab);
+});
+
+/* ---------- Painel ---------- */
+function cardPedido(p) {
+  const avanca = p.status === 'Novo'
+    ? `<button class="btn" data-act="avanca" data-id="${esc(p.id)}">Avançar</button>` : '';
+  const esquerda = p.status === 'Novo' ? avanca : '<span class="pronto">✔ PRONTO</span>';
+  const itens = (p.itens || []).map(it => `${it.qtd}x ${esc(it.nome)}`).join('<br>');
+  return `<div class="card">
+    <div class="row between"><span class="num">#${String(p.numero).padStart(3, '0')}</span>
+      <span class="badge s-${esc(p.status)}">${esc(p.status)}</span></div>
+    <div style="margin-top:6px;font-weight:600">${esc(p.cliente)}</div>
+    <div class="items">${itens}${p.obs ? `<br><span class="muted">Obs: ${esc(p.obs)}</span>` : ''}</div>
+    <div class="row between"><span class="total">${brl(p.total)}</span><span class="muted">${hora(p.criadoEm)}</span></div>
+    ${p.pagamento ? `<div class="muted" style="margin-top:6px">Pagamento: ${esc(p.pagamento)}</div>` : ''}
+    <div class="row between" style="margin-top:10px">${esquerda}<button class="btn danger" data-act="pedirExcluir" data-id="${esc(p.id)}">Excluir</button></div>
+  </div>`;
+}
+
+function renderPainel() {
+  const pedidos = dados.pedidos;
+  const lista = pedidos.filter(p => filtro === 'Todos' || p.status === filtro).sort((a, b) => b.numero - a.numero);
+  const chips = ['Todos', ...STATUS].map(s => {
+    const n = s === 'Todos' ? pedidos.length : pedidos.filter(p => p.status === s).length;
+    return `<button class="chip ${s === filtro ? 'on' : ''}" data-act="filtro" data-v="${s}">${s} (${n})</button>`;
+  }).join('');
+  $('#painel').innerHTML = `<button class="btn" data-act="abrirNovo" style="width:100%;margin-bottom:12px">+ Novo pedido</button><div class="chips">${chips}</div>` +
+    (lista.length ? lista.map(cardPedido).join('') : '<div class="empty">Nenhum pedido aqui ainda.</div>');
+}
+
+/* ---------- Resumo ---------- */
+const isHoje = iso => !!iso && new Date(iso).toDateString() === new Date().toDateString();
+const isMes = iso => {
+  if (!iso) return false;
+  const d = new Date(iso), n = new Date();
+  return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+};
+function metricas(lista) {
+  const fat = lista.reduce((s, p) => s + (p.total || 0), 0);
+  return {n: lista.length, fat, ticket: lista.length ? fat / lista.length : 0, pend: lista.filter(p => p.status === 'Novo').length};
+}
+const kpi = (t, v) => `<div class="kpi"><span class="muted">${t}</span><b>${v}</b></div>`;
+
+function renderResumo() {
+  const pedidos = dados.pedidos;
+  const hoje = pedidos.filter(p => isHoje(p.criadoEm));
+  const mes = pedidos.filter(p => isMes(p.criadoEm));
+  const mh = metricas(hoje), mm = metricas(mes);
+
+  const agora = new Date();
+  const dias = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).getDate();
+  const porDia = Array(dias).fill(0);
+  mes.forEach(p => { porDia[new Date(p.criadoEm).getDate() - 1] += p.total || 0; });
+  const max = Math.max(1, ...porDia);
+  const barras = porDia.map((v, i) =>
+    `<div class="bar" title="Dia ${i + 1}: ${brl(v)}"><i style="height:${Math.round(v / max * 90)}px"></i><span>${i + 1}</span></div>`).join('');
+
+  const pg = {};
+  mes.forEach(p => { const k = p.pagamento || 'Não informado'; pg[k] = (pg[k] || 0) + (p.total || 0); });
+  const pgHtml = Object.entries(pg).sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `<div class="li"><span>${esc(k)}</span><b>${brl(v)}</b></div>`).join('') || '<div class="empty">Sem vendas no mês.</div>';
+
+  const qt = {};
+  mes.forEach(p => (p.itens || []).forEach(it => { qt[it.nome] = (qt[it.nome] || 0) + it.qtd; }));
+  const top = Object.entries(qt).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  $('#resumo').innerHTML = `
+    <h3 class="sec">Hoje</h3>
+    <div class="kpis">${kpi('Pedidos', mh.n)}${kpi('Faturamento', brl(mh.fat))}${kpi('Ticket médio', brl(mh.ticket))}${kpi('Pendentes', mh.pend)}</div>
+    <h3 class="sec">Mês</h3>
+    <div class="kpis">${kpi('Pedidos', mm.n)}${kpi('Faturamento', brl(mm.fat))}${kpi('Ticket médio', brl(mm.ticket))}${kpi('Pendentes', mm.pend)}</div>
+    <div class="card"><div class="muted" style="margin-bottom:10px">Faturamento por dia do mês</div><div class="bars">${barras}</div></div>
+    <div class="card"><div class="muted" style="margin-bottom:6px">Faturamento por forma de pagamento (mês)</div>${pgHtml}</div>
+    <div class="card"><div class="muted" style="margin-bottom:6px">Produtos mais vendidos no mês</div>
+      ${top.length ? top.map(([n, q]) => `<div class="li"><span>${esc(n)}</span><b>${q}</b></div>`).join('') : '<div class="empty">Sem vendas no mês.</div>'}
+    </div>`;
+}
+
+/* ---------- Cardápio ---------- */
+function renderCardapio() {
+  const cardapio = dados.cardapio;
+  $('#listaCardapio').innerHTML = cardapio.length
+    ? cardapio.map(c => `<div class="li"><span>${esc(c.nome)} <span class="muted">${brl(c.preco)}</span></span>
+        <div class="row"><button class="btn ghost" data-act="abrirEditarProd" data-id="${esc(c.id)}">Editar</button><button class="btn danger" data-act="pedirRemover" data-id="${esc(c.id)}">Remover</button></div></div>`).join('')
+    : '<div class="empty">Cardápio vazio. Adicione produtos acima.</div>';
+  const atual = $('#produto').value;
+  $('#produto').innerHTML = '<option value="">Escolha o produto…</option>' +
+    cardapio.map(c => `<option value="${esc(c.id)}">${esc(c.nome)} — ${brl(c.preco)}</option>`).join('');
+  if (atual) $('#produto').value = atual;
+}
+
+/* ---------- Novo pedido ---------- */
+function renderCarrinho() {
+  const total = carrinho.reduce((s, c) => s + c.preco * c.qtd, 0);
+  $('#carrinho').innerHTML = carrinho.length
+    ? carrinho.map((c, i) => `<div class="li"><span>${c.qtd}x ${esc(c.nome)} <span class="muted">${brl(c.preco * c.qtd)}</span></span>
+        <button class="btn ghost" data-act="rmItem" data-i="${i}">✕</button></div>`).join('') +
+      `<div class="li total"><span>Total</span><span>${brl(total)}</span></div>`
+    : '<div class="empty" style="padding:12px 0">Nenhum item no pedido.</div>';
+}
+
+function msg(texto, erro = false) {
+  $('#msg').textContent = texto;
+  $('#msg').style.color = erro ? '#b91c1c' : 'var(--ok)';
+}
+
+async function lancarPedido() {
+  const cliente = $('#cliente').value.trim();
+  if (!cliente) return msg('Informe o nome do cliente.', true);
+  if (!carrinho.length) return msg('Adicione ao menos um item.', true);
+  try {
+    await api('criarPedido', {
+      cliente,
+      itens: carrinho.map(c => ({nome: c.nome, preco: c.preco, qtd: c.qtd})),
+      obs: $('#obs').value.trim(),
+      pagamento: $('#pagamento').value
+    });
+    carrinho = [];
+    $('#cliente').value = '';
+    $('#obs').value = '';
+    msg('');
+    renderCarrinho();
+    filtro = 'Todos';
+    renderPainel();
+    $('#novo').hidden = true;
+  } catch (e) {
+    if (e.message !== 'senha') msg('Erro ao salvar o pedido. Tente de novo.', true);
+  }
+}
+
+function adicionarItem() {
+  const id = $('#produto').value;
+  const qtd = Math.max(1, parseInt($('#qtd').value, 10) || 1);
+  const prod = dados.cardapio.find(c => c.id === id);
+  if (!prod) return msg('Escolha um produto.', true);
+  const existente = carrinho.find(c => c.id === id);
+  if (existente) existente.qtd += qtd;
+  else carrinho.push({id, nome: prod.nome, preco: Number(prod.preco), qtd});
+  $('#qtd').value = 1;
+  msg('');
+  renderCarrinho();
+}
+
+/* ---------- Pop-up de confirmação e edição ---------- */
+function abrirConfirmar(alvo) {
+  alvoExcluir = alvo;
+  $('#confirmarTexto').textContent = alvo.tipo === 'produto'
+    ? 'Este produto será removido do cardápio.'
+    : 'Este pedido será excluído e não poderá ser recuperado.';
+  $('#confirmar').hidden = false;
+}
+
+function abrirEditar(id) {
+  const p = dados.cardapio.find(c => c.id === id);
+  if (!p) return;
+  $('#eId').value = id;
+  $('#eNome').value = p.nome;
+  $('#ePreco').value = String(p.preco).replace('.', ',');
+  $('#editarProd').hidden = false;
+}
+
+/* ---------- Ações ---------- */
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-act]');
+  if (!t) return;
+  const a = t.dataset.act;
+  try {
+    if (a === 'abrirNovo') { $('#novo').hidden = false; msg(''); }
+    else if (a === 'entrarSenha') { autenticacaoCancelada = false; await pedirSenha(); }
+    else if (a === 'fechar') { $('#novo').hidden = true; }
+    else if (a === 'rmItem') { carrinho.splice(Number(t.dataset.i), 1); renderCarrinho(); }
+    else if (a === 'filtro') { filtro = t.dataset.v; renderPainel(); }
+    else if (a === 'avanca') { await api('avancar', {id: t.dataset.id}); }
+    else if (a === 'pedirExcluir') abrirConfirmar({tipo: 'pedido', id: t.dataset.id});
+    else if (a === 'pedirRemover') abrirConfirmar({tipo: 'produto', id: t.dataset.id});
+    else if (a === 'cancelarExcluir') { alvoExcluir = null; $('#confirmar').hidden = true; }
+    else if (a === 'confirmarExcluir') {
+      if (!alvoExcluir) return;
+      const acao = alvoExcluir.tipo === 'produto' ? 'excluirProduto' : 'excluirPedido';
+      await api(acao, {id: alvoExcluir.id});
+      alvoExcluir = null;
+      $('#confirmar').hidden = true;
+    }
+    else if (a === 'abrirEditarProd') abrirEditar(t.dataset.id);
+    else if (a === 'fecharEditarProd') $('#editarProd').hidden = true;
+    else if (a === 'salvarEditarProd') {
+      const nome = $('#eNome').value.trim();
+      const preco = parseFloat(($('#ePreco').value || '').replace(',', '.'));
+      if (!nome || isNaN(preco)) return alert('Informe o nome e um preço válido.');
+      await api('editarProduto', {id: $('#eId').value, nome, preco});
+      $('#editarProd').hidden = true;
+    }
+  } catch (err) {
+    if (err.message !== 'senha') alert('Não foi possível concluir a ação. Tente de novo.');
+  }
+});
+
+$('#novo').addEventListener('click', e => { if (e.target.id === 'novo') $('#novo').hidden = true; });
+$('#lancar').onclick = lancarPedido;
+$('#addItem').onclick = adicionarItem;
+
+$('#addProd').onclick = async () => {
+  const nome = $('#pNome').value.trim();
+  const preco = parseFloat(($('#pPreco').value || '').replace(',', '.'));
+  if (!nome || isNaN(preco)) return alert('Informe o nome e um preço válido.');
+  try {
+    await api('criarProduto', {nome, preco});
+    $('#pNome').value = '';
+    $('#pPreco').value = '';
+  } catch (e) { if (e.message !== 'senha') alert('Erro ao salvar o produto.'); }
+};
+
+/* ---------- Inicialização ---------- */
+function render() {
+  renderPainel();
+  renderResumo();
+  renderCardapio();
+}
+
+renderCarrinho();
+render();
+carregar();
+setInterval(() => { if (!document.hidden && !pedindoSenha && !autenticacaoCancelada) carregar(); }, 5000);
+</script>
+</body>
+</html>
