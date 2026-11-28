@@ -139,10 +139,16 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const brl = v => Number(v || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 const hora = iso => iso ? new Date(iso).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
 const STATUS = ['Novo', 'Pronto'];
+const FILTROS = [
+  { valor: 'Novo', rotulo: 'Novos' },
+  { valor: 'Pronto', rotulo: 'Prontos' },
+  { valor: 'Todos', rotulo: 'Todos' },
+];
+const ORDEM_STATUS = { Novo: 0, Pronto: 1 };
 
 let dados = {pedidos: [], cardapio: []};
 let carrinho = [];
-let filtro = 'Todos';
+let filtro = 'Novo';
 let alvoExcluir = null;
 let senha = localStorage.getItem('feirinha-senha') || '';
 let pedindoSenha = false;
@@ -247,10 +253,12 @@ function cardPedido(p) {
 
 function renderPainel() {
   const pedidos = dados.pedidos;
-  const lista = pedidos.filter(p => filtro === 'Todos' || p.status === filtro).sort((a, b) => b.numero - a.numero);
-  const chips = ['Todos', ...STATUS].map(s => {
-    const n = s === 'Todos' ? pedidos.length : pedidos.filter(p => p.status === s).length;
-    return `<button class="chip ${s === filtro ? 'on' : ''}" data-act="filtro" data-v="${s}">${s} (${n})</button>`;
+  const lista = pedidos
+    .filter(p => filtro === 'Todos' || p.status === filtro)
+    .sort((a, b) => (ORDEM_STATUS[a.status] ?? 9) - (ORDEM_STATUS[b.status] ?? 9) || b.numero - a.numero);
+  const chips = FILTROS.map(({ valor, rotulo }) => {
+    const n = valor === 'Todos' ? pedidos.length : pedidos.filter(p => p.status === valor).length;
+    return `<button class="chip ${valor === filtro ? 'on' : ''}" data-act="filtro" data-v="${valor}">${rotulo} (${n})</button>`;
   }).join('');
   $('#painel').innerHTML = `<button class="btn" data-act="abrirNovo" style="width:100%;margin-bottom:12px">+ Novo pedido</button><div class="chips">${chips}</div>` +
     (lista.length ? lista.map(cardPedido).join('') : '<div class="empty">Nenhum pedido aqui ainda.</div>');
@@ -348,7 +356,7 @@ async function lancarPedido() {
     $('#obs').value = '';
     msg('');
     renderCarrinho();
-    filtro = 'Todos';
+    filtro = 'Novo';
     renderPainel();
     $('#novo').hidden = true;
   } catch (e) {
